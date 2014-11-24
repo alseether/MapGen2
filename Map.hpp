@@ -430,18 +430,33 @@ public:
 	* La llamada a la funcion sin argumentos establece un alto y un  ancho de 5 pixeles por cada valor del
 	* mapa.
 	*/
-
+	void borrarVistaPlanta(){
+		mostrarVistaPlanta(0, 0, 5, 5, RGB(0,0,0));
+	}
+	void borrarVistaPlanta(int desdeX, int desdeY){
+		mostrarVistaPlanta(desdeX, desdeY, 5, 5, RGB(0, 0, 0));
+	}
+	void borrarVistaPlanta(int pixelWidth, float pixelHeight){
+		mostrarVistaPlanta(0, 0, pixelWidth, pixelHeight, RGB(0, 0, 0));
+	}
+	void borrarVistaPlanta(int desdeX, int desdeY, int pixelWidth, float pixelHeight){
+		mostrarVistaPlanta(desdeX, desdeY, pixelWidth, pixelHeight, RGB(0, 0, 0));
+	}
 	void mostrarVistaPlanta(){
-		mostrarVistaPlanta(0,0,5, 5);
+		mostrarVistaPlanta(0,0,5, 5, RGB(255,255,255));
 	}
 	void mostrarVistaPlanta(int desdeX, int desdeY){
-		mostrarVistaPlanta(desdeX,desdeY, 5, 5);
+		mostrarVistaPlanta(desdeX, desdeY, 5, 5, RGB(255, 255, 255));
 	}
 	void mostrarVistaPlanta(int pixelWidth, float pixelHeight){
 		// Es float, solo para poder tener dos llamadas con dos argumentos, aunque ambos son int
-		mostrarVistaPlanta(0,0, pixelWidth, pixelHeight);
+		mostrarVistaPlanta(0, 0, pixelWidth, pixelHeight, RGB(255, 255, 255));
 	}
-	void mostrarVistaPlanta(int desdeX, int desdeY, int pixelWidth, int pixelHeight){
+	void mostrarVistaPlanta(int desdeX, int desdeY, int pixelWidth, float pixelHeight){
+		mostrarVistaPlanta(desdeX, desdeY, pixelWidth, pixelHeight, RGB(255, 255, 255));
+	}
+	void mostrarVistaPlanta(int desdeX, int desdeY, int pixelWidth, int pixelHeight, COLORREF c){
+		bool borrar = (c == RGB(0, 0, 0));
 		int anchoPixel = pixelWidth;
 		int altoPixel = pixelHeight;
 		int x, y; 
@@ -450,8 +465,12 @@ public:
 		for (int i = 0; i < size*size; i++)
 		{
 			alto = calculaAlto(map[i]);
-			alto = altoMapa - alto;
-			color = calculaColor(alto);
+			if (borrar){
+				color = c;
+			}
+			else{
+				color = calculaColor(alto);
+			}
 			x = (i % size);
 			y = (i / size);
 			for (int j = desdeX; j < desdeX + anchoPixel; ++j){
@@ -527,7 +546,7 @@ public:
 	void mostrarCorte3DLR(int desdeX, int desdeY, int grosor, COLORREF c){
 		bool borrar = (c == RGB(0,0,0));	// Si el color a pasar es negro, es que quiero borrar
 		int x, y; 
-		COLORREF color, agua, gris = RGB(167,167,167);
+		COLORREF color, agua, gris;
 		int offset = -1;
 		int alto;
 		for (int i = 0; i < size*size; ++i)
@@ -539,6 +558,7 @@ public:
 			if(borrar){
 				color = c;
 				gris = c;
+				agua = c;
 			}
 			else{
 				color = calculaColor(alto);
@@ -593,7 +613,7 @@ public:
 	void mostrarCorte3DLRQuick(int desdeX, int desdeY, int grosor, COLORREF c){
 		bool borrar = (c == RGB(0,0,0));
 		int x, y;
-		COLORREF color, agua, gris = RGB(167, 167, 167);
+		COLORREF color, agua, gris;
 		int offset = -1;
 		int alto;
 		int end;
@@ -605,9 +625,12 @@ public:
 			alto = calculaAlto(map[i]);
 			if(borrar){
 				color = c;
+				agua = c;
+				gris = c;
 			}
 			else{
 				color = calculaColor(alto);
+				gris = calculaColorSuave(alto);
 				agua = calculaColorAgua(alto);
 			}
 			x = (i % size) * grosor;
@@ -628,10 +651,6 @@ public:
 					SetPixel(hdc, (desdeX + ((x + k) + y)), (desdeY + alto + offset), gris);
 				}
 			}
-			/*
-			for (int k = 0; k < grosor; ++k){
-				SetPixel(hdc, (desdeX + (grosor + (x + k + y))), (desdeY + alto + offset), color);
-			}*/
 			/*
 			* Notese que el for de la representacion rellena aqui desaparece, porque solo se pinta el punto de la posicion alto
 			*/
@@ -664,9 +683,7 @@ public:
 	void mostrarCorte3DRL(int desdeX, int desdeY, int grosor, COLORREF c){
 		bool borrar = (c == RGB(0,0,0));
 		int x, y;
-		COLORREF color, agua, gris = RGB(167,167,167);
-		COLORREF aguaClara = RGB(58,90,220);
-		COLORREF aguaOscura = RGB(28, 54, 159);
+		COLORREF color, agua, gris;
 		int offset = -1;
 		int alto;
 		for (int i = 0; i < size*size; ++i)
@@ -675,38 +692,32 @@ public:
 				offset++;
 			}
 			alto = calculaAlto(map[i]);
-			alto = altoMapa - alto;
 			if(borrar){
 				color = c;
-				aguaClara = c;
-				aguaOscura = c;
+				agua = c;
 				gris = c;
 			}
 			else{
 				color = calculaColor(alto);
+				agua = calculaColorAgua(alto);
+				gris = calculaColorSuave(alto);
 			}
 			x = (i % size) * grosor;
 			y = (i / size);
 
 			if (alto > alturaAgua){
-				agua = aguaOscura;
-				if (alto/2 < alturaAgua){
-					agua = aguaClara;
-				}
-				for (int j = desdeY + alturaAgua; j < desdeY + alto; ++j){
-					for (int k = 0; k < grosor; ++k){
-						SetPixel(hdc, (desdeX + (grosor + size + x + k - y)), (j + offset), agua);
-					}
+				for (int k = 0; k < grosor; ++k){
+					SetPixel(hdc, (desdeX + (size + x + k - y)), (desdeY + alturaAgua + offset), agua);
 				}
 			}
 			for (int j = desdeY + alto; j < desdeY + altoMapa; ++j){
 				for (int k = 0; k < grosor; ++k){
-					SetPixel(hdc, (desdeX + (grosor + (size + x + k  - y))), (j + offset), color);
+					SetPixel(hdc, (desdeX + (size + x + k  - y)), (j + offset), color);
 				}
 			}
 			if(alto%10 == 0){
 				for (int k = 0; k < grosor; ++k){
-					SetPixel(hdc, (desdeX + (grosor + (size + x + k - y))), (desdeY + alto + offset), gris);
+					SetPixel(hdc, (desdeX + (size + x + k - y)), (desdeY + alto + offset), gris);
 				}
 			}
 		}
@@ -738,28 +749,43 @@ public:
 	void mostrarCorte3DRLQuick(int desdeX, int desdeY, int grosor, COLORREF c){
 		bool borrar = (c == RGB(0,0,0));
 		int x, y;
-		COLORREF color;
+		COLORREF color, agua, gris;
 		int offset = -1;
 		int alto;
+		int end;
 		for (int i = 0; i < size*size; ++i){
 			if (i%size == 0){
 				offset++;
 			}
 			alto = calculaAlto(map[i]);
-			alto = altoMapa - alto;
 			if(borrar){
 				color = c;
+				agua = c;
+				gris = c;
 			}
 			else{
 				color = calculaColor(alto);
+				agua = calculaColorAgua(alto);
+				gris = calculaColorSuave(alto);
 			}
 			x = (i % size) * grosor;
 			y = (i / size);
-
-			for (int k = 0; k < grosor; ++k){
-				SetPixel(hdc, (desdeX + (grosor + (size + x + k  - y))), (desdeY+ alto + offset), color);
+			(x == (size-1) * grosor) ? end = altoMapa : end = alto + 10;
+			if (alto > alturaAgua){
+				for (int k = 0; k < grosor; ++k){
+					SetPixel(hdc, (desdeX + (size + x + k - y)), (desdeY + alturaAgua + offset), agua);
+				}
 			}
-			//SetPixel(hdc, (desdeX + (grosor*(size + x - y))), (desdeY + alto + offset), color);
+			for (int j = desdeY + alto; j < desdeY + end; ++j){
+				for (int k = 0; k < grosor; ++k){
+					SetPixel(hdc, (desdeX + (size + x + k - y)), (j + offset), color);
+				}
+			}
+			if (alto % 10 == 0){
+				for (int k = 0; k < grosor; ++k){
+					SetPixel(hdc, (desdeX + (size + x + k - y)), (desdeY + alto + offset), gris);
+				}
+			}
 		}
 	}
 
@@ -787,9 +813,9 @@ public:
 		mostrarCorte3DFront(desdeX, desdeY, grosor, RGB(255,255,255));
 	}
 	void mostrarCorte3DFront(int desdeX, int desdeY, int grosor, COLORREF c){
-		bool borrar = (c = RGB(0,0,0));
+		bool borrar = (c == RGB(0,0,0));
 		int x, y;
-		COLORREF color, colorS;
+		COLORREF color, agua, gris;
 		int offset = -1;
 		int alto;
 		for (int i = 0; i < size*size; ++i)
@@ -798,21 +824,34 @@ public:
 				offset ++;
 			}
 			alto = calculaAlto(map[i]);
-			alto = altoMapa - alto;
 			if(borrar){
 				color = c;
-				colorS = c;
+				agua = c;
+				gris = c;
 			}
 			else{
 				color = calculaColor(alto);
-				colorS = calculaColorSuave(alto);
+				agua = calculaColorAgua(alto);
+				gris = calculaColorSuave(alto);
 			}
-			x = (i % size);
+			x = (i % size) * grosor;
 			y = (i / size);
-			for (int j = desdeY + alto; j < desdeY + altoMapa; ++j){
-				SetPixel(hdc, (desdeX + (grosor*x)), (j + offset), color);
+
+			if (alto > alturaAgua){
+				for (int k = 0; k < grosor; ++k){
+					SetPixel(hdc, (desdeX + x + k), (desdeY + alturaAgua + offset), agua);
+				}
 			}
-			SetPixel(hdc, (desdeX + (grosor*x)), (desdeY + alto + offset), colorS);
+			for (int j = desdeY + alto; j < desdeY + altoMapa; ++j){
+				for (int k = 0; k < grosor; ++k){
+					SetPixel(hdc, (desdeX + x + k), (j + offset), color);
+				}
+			}
+			if (alto % 10 == 0){
+				for (int k = 0; k < grosor; ++k){
+					SetPixel(hdc, (desdeX + x + k), (desdeY + alto + offset), gris);
+				}
+			}
 		}
 	}
 
@@ -842,25 +881,43 @@ public:
 	void mostrarCorte3DFrontQuick(int desdeX, int desdeY, int grosor, COLORREF c){
 		bool borrar = (c == RGB(0,0,0));
 		int x, y;
-		COLORREF color;
+		COLORREF color, agua, gris;
 		int offset = -1;
 		int alto;
+		int end;
 		for (int i = 0; i < size*size; ++i)
 		{
 			if (i%size == 0){
 				offset ++;
 			}
 			alto = calculaAlto(map[i]);
-			alto = altoMapa - alto;
 			if(borrar){
 				color = c;
+				agua = c;
+				gris = c;
 			}
 			else{
-				color = calculaColorSuave(alto);
+				color = calculaColor(alto);
+				agua = calculaColorAgua(alto);
+				gris = calculaColorSuave(alto);
 			}
-			x = (i % size);
+			x = (i % size) * grosor;
 			y = (i / size);
-			SetPixel(hdc, (desdeX + (grosor*x)), (desdeY + alto + offset), color);
+			if (alto > alturaAgua){
+				for (int k = 0; k < grosor; ++k){
+					SetPixel(hdc, (desdeX + x + k), (desdeY + alturaAgua + offset), agua);
+				}
+			}
+			for (int j = desdeY + alto; j < desdeY + alto + 10; ++j){
+				for (int k = 0; k < grosor; ++k){
+					SetPixel(hdc, (desdeX + x + k), (j + offset), color);
+				}
+			}
+			if (alto % 10 == 0){
+				for (int k = 0; k < grosor; ++k){
+					SetPixel(hdc, (desdeX + x + k), (desdeY + alto + offset), gris);
+				}
+			}
 		}
 	}
 
